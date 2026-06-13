@@ -57,9 +57,11 @@ spring:
 # JWT配置
 app:
   jwt:
-    secret: jiangsu-college-guide-jwt-secret-key-2025-please-change-in-production
+    secret: ${JWT_SECRET:jiangsu-college-guide-jwt-secret-key-2025-please-change-in-production}
     expiration-ms: 86400000    # 24小时
     refresh-expiration-ms: 604800000  # 7天
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:3000,http://localhost:3001,http://127.0.0.1:5173,http://127.0.0.1:5174}
 
 # 文件上传
 spring.servlet.multipart:
