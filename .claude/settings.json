@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(curl -s http://localhost:5173/api/cities/profiles)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'code={d['code']}, cities={len\\(d['data']\\)}'\\)\")",
+      "Bash(curl -s http://localhost:5173/api/schools/universities)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'code={d['code']}, schools={len\\(d['data']\\)}'\\)\")",
+      "Bash(curl -s http://localhost:5173/api/experiences)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'code={d['code']}, experiences={len\\(d['data']\\)}'\\)\")",
+      "Bash(curl -s http://localhost:5173/api/qa)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'code={d['code']}, qa={len\\(d['data']\\)}'\\)\")",
+      "Bash(curl -s -X POST http://localhost:5173/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"admin123\"}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'code={d['code']}, token={'OK' if d['data']['token'] else 'MISSING'}'\\)\")"
+    ]
+  }
+}

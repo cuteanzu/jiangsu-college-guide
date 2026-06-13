@@ -1,0 +1,99 @@
+server:
+  port: 9090
+
+spring:
+  application:
+    name: jiangsu-college-guide
+  profiles:
+    active: dev
+
+  # 数据源配置 (默认用H2开发，MySQL上线)
+  datasource:
+    url: jdbc:h2:mem:jiangsu_guide;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # H2控制台
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # JPA
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Redis (开发阶段可不连)
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  # SQL初始化
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      continue-on-error: true
+
+# JWT配置
+app:
+  jwt:
+    secret: jiangsu-college-guide-jwt-secret-key-2025-please-change-in-production
+    expiration-ms: 86400000    # 24小时
+    refresh-expiration-ms: 604800000  # 7天
+
+# 文件上传
+spring.servlet.multipart:
+  max-file-size: 10MB
+  max-request-size: 20MB
+
+# 自定义上传配置
+app.upload:
+  dir: ${UPLOAD_DIR:uploads}
+  url-prefix: /uploads
+
+# 静态资源映射（开发环境访问上传文件）
+spring.web.resources:
+  static-locations: classpath:/static/,file:./uploads/
+
+# Swagger
+springdoc:
+  api-docs:
+    path: /api/api-docs
+  swagger-ui:
+    path: /api/docs
+    tags-sorter: alpha
+
+# 邮件（开发环境不配置则打印验证码到控制台；生产环境配置 SMTP）
+spring.mail:
+  host: ${MAIL_HOST:}
+  port: ${MAIL_PORT:587}
+  username: ${MAIL_USERNAME:}
+  password: ${MAIL_PASSWORD:}
+  properties:
+    mail.smtp.auth: true
+    mail.smtp.starttls.enable: true
+
+# 日志
+logging:
+  level:
+    com.jiangsu.guide: DEBUG
+    org.springframework.security: INFO

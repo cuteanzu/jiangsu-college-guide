@@ -1,0 +1,66 @@
+package com.jiangsu.guide.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
+
+@Data
+@Entity
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "experience")
+public class Experience {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true, length = 50)
+    private String code;
+
+    @Column(nullable = false, length = 30)
+    private String category;
+
+    @Column(name = "school_id")
+    private Long schoolId;
+
+    @Column(name = "school_name", length = 100)
+    private String schoolName;
+
+    @Column(length = 50)
+    private String city;
+
+    @Column(nullable = false, length = 200)
+    private String title;
+
+    @Column(length = 500)
+    private String excerpt;
+
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String body;
+
+    @Column(name = "like_count")
+    @Builder.Default
+    private Integer likeCount = 0;
+
+    @Column(name = "comment_count")
+    @Builder.Default
+    private Integer commentCount = 0;
+
+    @Column(length = 500)
+    private String tags;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+}
