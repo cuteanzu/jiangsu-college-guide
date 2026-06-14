@@ -5,6 +5,7 @@ import com.jiangsu.guide.dto.*;
 import com.jiangsu.guide.entity.Comment;
 import com.jiangsu.guide.entity.School;
 import com.jiangsu.guide.entity.SchoolLifeInfo;
+import com.jiangsu.guide.entity.SchoolLifeSurveySummary;
 import com.jiangsu.guide.exception.BusinessException;
 import com.jiangsu.guide.repository.*;
 import com.jiangsu.guide.service.SchoolService;
@@ -24,6 +25,7 @@ public class SchoolServiceImpl implements SchoolService {
 
     private final SchoolRepository schoolRepository;
     private final SchoolLifeInfoRepository lifeInfoRepository;
+    private final SchoolLifeSurveySummaryRepository surveySummaryRepository;
     private final CommentRepository commentRepository;
     private final FavoriteRepository favoriteRepository;
 
@@ -33,6 +35,7 @@ public class SchoolServiceImpl implements SchoolService {
                 .orElseThrow(() -> new BusinessException(404, "学校不存在"));
 
         SchoolLifeInfo lifeInfo = lifeInfoRepository.findBySchoolId(id).orElse(null);
+        SchoolLifeSurveySummary survey = surveySummaryRepository.findBySchoolId(id).orElse(null);
         long commentCount = commentRepository.countBySchoolIdAndStatus(id, "APPROVED");
         boolean isFavorited = false;
         Long currentUserId = SecurityUtils.getCurrentUserId();
@@ -43,6 +46,7 @@ public class SchoolServiceImpl implements SchoolService {
         return SchoolDetailDTO.builder()
                 .basic(toSchoolDTO(school, isFavorited))
                 .lifeInfo(toLifeInfoDTO(lifeInfo))
+                .lifeSurvey(toLifeSurveyDTO(survey))
                 .commentCount(commentCount)
                 .isFavorited(isFavorited)
                 .build();
@@ -110,6 +114,38 @@ public class SchoolServiceImpl implements SchoolService {
                 .surroundingDesc(info.getSurroundingDesc())
                 .tips(info.getTips())
                 .sourceType(info.getSourceType())
+                .build();
+    }
+
+    private LifeSurveyDTO toLifeSurveyDTO(SchoolLifeSurveySummary survey) {
+        if (survey == null) return null;
+        return LifeSurveyDTO.builder()
+                .schoolName(survey.getSchoolName())
+                .sourceUrl(survey.getSourceUrl())
+                .responseCount(survey.getResponseCount())
+                .dormSummary(survey.getDormSummary())
+                .acSummary(survey.getAcSummary())
+                .privateBathSummary(survey.getPrivateBathSummary())
+                .studyRuleSummary(survey.getStudyRuleSummary())
+                .runningSummary(survey.getRunningSummary())
+                .vacationSummary(survey.getVacationSummary())
+                .deliverySummary(survey.getDeliverySummary())
+                .transportSummary(survey.getTransportSummary())
+                .laundrySummary(survey.getLaundrySummary())
+                .networkSummary(survey.getNetworkSummary())
+                .powerNetworkSummary(survey.getPowerNetworkSummary())
+                .canteenSummary(survey.getCanteenSummary())
+                .hotWaterSummary(survey.getHotWaterSummary())
+                .scooterSummary(survey.getScooterSummary())
+                .powerLimitSummary(survey.getPowerLimitSummary())
+                .overnightStudySummary(survey.getOvernightStudySummary())
+                .computerSummary(survey.getComputerSummary())
+                .paymentSummary(survey.getPaymentSummary())
+                .bankCardSummary(survey.getBankCardSummary())
+                .supermarketSummary(survey.getSupermarketSummary())
+                .expressSummary(survey.getExpressSummary())
+                .sharedBikeSummary(survey.getSharedBikeSummary())
+                .accessControlSummary(survey.getAccessControlSummary())
                 .build();
     }
 

@@ -228,4 +228,10 @@ public class AdminController {
         int count = csvImportService.importSchoolLifeInfo(file.getInputStream());
         return Result.ok(Map.of("imported", count, "type", "school_life_info"));
     }
+
+    @PostMapping("/import/life-survey")
+    public Result<Map<String, Object>> importLifeSurvey(@RequestParam("file") MultipartFile file) throws IOException {
+        int count = csvImportService.importLifeSurvey(file.getInputStream());
+        return Result.ok(Map.of("imported", count, "type", "school_life_survey_summary"));
+    }
 }

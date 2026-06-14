@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class SchoolDetailDTO {
     private SchoolDTO basic;
     private LifeInfoDTO lifeInfo;
+    private LifeSurveyDTO lifeSurvey;
     private long commentCount;
     private boolean isFavorited;
 }

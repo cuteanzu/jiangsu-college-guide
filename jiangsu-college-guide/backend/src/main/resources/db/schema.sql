@@ -532,6 +532,44 @@ INSERT INTO `qa_entry` (`code`, `question`, `answer`, `school_id`, `school_name`
  '看你的目标。如果追求学术或考研跳板，中国矿业大学（徐州 211）性价比很高——分数线相对低但学风扎实，考研成功率极高。江苏海洋大学（连云港）的优势专业是海洋科学和水产养殖，在细分领域就业不错。两座城市的生活成本比南京低 30%-40%，但实习机会和城市活力确实不如苏南。如果你的分数刚好匹配，且不介意地理位置，这两所学校都值得认真考虑。',
  NULL, NULL, 'city-life', 25);
 
+-- ── 学校生活调查汇总表 (colleges.chat 数据) ──
+CREATE TABLE IF NOT EXISTS school_life_survey_summary (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    school_id       BIGINT        NOT NULL,
+    school_name     VARCHAR(100)  NOT NULL,
+    source_url      VARCHAR(500)  DEFAULT NULL,
+    response_count  INT           DEFAULT 0,
+    dorm_summary              TEXT,
+    ac_summary                TEXT,
+    private_bath_summary      TEXT,
+    study_rule_summary        TEXT,
+    running_summary           TEXT,
+    vacation_summary          TEXT,
+    delivery_summary          TEXT,
+    transport_summary         TEXT,
+    laundry_summary           TEXT,
+    network_summary           TEXT,
+    power_network_summary     TEXT,
+    canteen_summary           TEXT,
+    hot_water_summary         TEXT,
+    scooter_summary           TEXT,
+    power_limit_summary       TEXT,
+    overnight_study_summary   TEXT,
+    computer_summary          TEXT,
+    payment_summary           TEXT,
+    bank_card_summary         TEXT,
+    supermarket_summary       TEXT,
+    express_summary           TEXT,
+    shared_bike_summary       TEXT,
+    access_control_summary    TEXT,
+    raw_payload     TEXT,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_survey_school (school_id),
+    INDEX idx_survey_school_name (school_name),
+    CONSTRAINT fk_survey_school FOREIGN KEY (school_id) REFERENCES school(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ── 初始管理员账户 (密码: admin123, BCrypt加密) ──
 INSERT INTO `app_user` (`username`, `password`, `nickname`, `role`, `status`) VALUES
 ('admin', '$2a$10$PdDp26p/1KF.d8B.AKkTlO.H5YBbdw0gzyc1ECr09Q1XNT5KxSYA.', '系统管理员', 'ADMIN', 1);

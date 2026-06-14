@@ -9,6 +9,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jiangsu.guide.entity.School;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -16,8 +19,8 @@ import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * CSV 数据导入服务
@@ -162,6 +165,202 @@ public class CsvImportService {
     }
 
     // ================================================================
+    // SchoolLifeSurveySummary upsert (colleges.chat 生活调查数据)
+    // ================================================================
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /**
+     * CSV 列序（27 列）:
+     *   0:name  1:url  2:答卷数  3:上床下桌  4:空调  5:独立卫浴
+     *   6:早晚自习  7:晨跑  8:跑步打卡  9:寒暑假  10:外卖
+     *   11:交通  12:洗衣机  13:校园网  14:断电断网  15:食堂
+     *   16:热水  17:电瓶车  18:限电  19:通宵自习  20:电脑
+     *   21:卡消费  22:银行卡  23:超市  24:快递  25:共享单车  26:门禁
+     */
+    @Transactional
+    public int importLifeSurvey(InputStream inputStream) {
+        List<String[]> rows = parseCsv(inputStream, 27);
+        if (rows.isEmpty()) return 0;
+
+        int skipped = 0;
+        List<String[]> validRows = new ArrayList<>();
+
+        for (String[] row : rows) {
+            String schoolName = row[0].trim();
+            if (schoolName.isEmpty()) {
+                log.warn("学校名为空，跳过该行");
+                skipped++;
+                continue;
+            }
+            Long schoolId = resolveSchoolIdByName(schoolName);
+            if (schoolId == null) {
+                log.warn("学校未匹配: \"{}\"，跳过该行", schoolName);
+                skipped++;
+                continue;
+            }
+            // 将 schoolId 注入到 row 数组中（扩展为 28 列，最后一列为 schoolId）
+            String[] ext = Arrays.copyOf(row, 28);
+            ext[27] = String.valueOf(schoolId);
+            validRows.add(ext);
+        }
+
+        if (validRows.isEmpty()) {
+            log.warn("没有可导入的行（全部跳过），共 {} 行", rows.size());
+            return 0;
+        }
+
+        String sql = "INSERT INTO school_life_survey_summary (school_id, school_name, source_url, response_count, " +
+                "dorm_summary, ac_summary, private_bath_summary, study_rule_summary, " +
+                "running_summary, vacation_summary, delivery_summary, transport_summary, " +
+                "laundry_summary, network_summary, power_network_summary, canteen_summary, " +
+                "hot_water_summary, scooter_summary, power_limit_summary, overnight_study_summary, " +
+                "computer_summary, payment_summary, bank_card_summary, supermarket_summary, " +
+                "express_summary, shared_bike_summary, access_control_summary, raw_payload) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE " +
+                "school_name = VALUES(school_name), source_url = VALUES(source_url), " +
+                "response_count = VALUES(response_count), " +
+                "dorm_summary = VALUES(dorm_summary), ac_summary = VALUES(ac_summary), " +
+                "private_bath_summary = VALUES(private_bath_summary), " +
+                "study_rule_summary = VALUES(study_rule_summary), " +
+                "running_summary = VALUES(running_summary), " +
+                "vacation_summary = VALUES(vacation_summary), " +
+                "delivery_summary = VALUES(delivery_summary), " +
+                "transport_summary = VALUES(transport_summary), " +
+                "laundry_summary = VALUES(laundry_summary), " +
+                "network_summary = VALUES(network_summary), " +
+                "power_network_summary = VALUES(power_network_summary), " +
+                "canteen_summary = VALUES(canteen_summary), " +
+                "hot_water_summary = VALUES(hot_water_summary), " +
+                "scooter_summary = VALUES(scooter_summary), " +
+                "power_limit_summary = VALUES(power_limit_summary), " +
+                "overnight_study_summary = VALUES(overnight_study_summary), " +
+                "computer_summary = VALUES(computer_summary), " +
+                "payment_summary = VALUES(payment_summary), " +
+                "bank_card_summary = VALUES(bank_card_summary), " +
+                "supermarket_summary = VALUES(supermarket_summary), " +
+                "express_summary = VALUES(express_summary), " +
+                "shared_bike_summary = VALUES(shared_bike_summary), " +
+                "access_control_summary = VALUES(access_control_summary), " +
+                "raw_payload = VALUES(raw_payload), updated_at = NOW()";
+
+        jdbcTemplate.batchUpdate(sql, validRows, 100, (PreparedStatement ps, String[] row) -> {
+            ps.setLong(1, Long.parseLong(row[27]));    // school_id
+            ps.setString(2, row[0].trim());             // school_name
+            ps.setString(3, nvl(row[1]));               // source_url
+            ps.setInt(4, parseInt(row[2]));             // response_count
+            ps.setString(5, generateSummary(row[3]));   // dorm_summary (上床下桌)
+            ps.setString(6, generateSummary(row[4]));   // ac_summary (空调)
+            ps.setString(7, generateSummary(row[5]));   // private_bath_summary (独立卫浴)
+            ps.setString(8, generateSummary(row[6]));   // study_rule_summary (早晚自习)
+            ps.setString(9, mergeRunningSummary(row[7], row[8])); // running_summary (晨跑+跑步打卡)
+            ps.setString(10, generateSummary(row[9]));  // vacation_summary (寒暑假)
+            ps.setString(11, generateSummary(row[10])); // delivery_summary (外卖)
+            ps.setString(12, generateSummary(row[11])); // transport_summary (交通)
+            ps.setString(13, generateSummary(row[12])); // laundry_summary (洗衣机)
+            ps.setString(14, generateSummary(row[13])); // network_summary (校园网)
+            ps.setString(15, generateSummary(row[14])); // power_network_summary (断电断网)
+            ps.setString(16, generateSummary(row[15])); // canteen_summary (食堂)
+            ps.setString(17, generateSummary(row[16])); // hot_water_summary (热水)
+            ps.setString(18, generateSummary(row[17])); // scooter_summary (电瓶车)
+            ps.setString(19, generateSummary(row[18])); // power_limit_summary (限电)
+            ps.setString(20, generateSummary(row[19])); // overnight_study_summary (通宵自习)
+            ps.setString(21, generateSummary(row[20])); // computer_summary (电脑)
+            ps.setString(22, generateSummary(row[21])); // payment_summary (卡消费)
+            ps.setString(23, generateSummary(row[22])); // bank_card_summary (银行卡)
+            ps.setString(24, generateSummary(row[23])); // supermarket_summary (超市)
+            ps.setString(25, generateSummary(row[24])); // express_summary (快递)
+            ps.setString(26, generateSummary(row[25])); // shared_bike_summary (共享单车)
+            ps.setString(27, generateSummary(row[26])); // access_control_summary (门禁)
+            ps.setString(28, buildRawPayload(row));     // raw_payload (JSON)
+        });
+
+        log.info("✔ 生活调查导入完成: 成功 {} 行, 跳过 {} 行 (学校未匹配或名为空)",
+                validRows.size(), skipped);
+        return validRows.size();
+    }
+
+    /**
+     * 按学校名称精确匹配 school_id
+     */
+    private Long resolveSchoolIdByName(String schoolName) {
+        List<School> schools = schoolRepository.findByNameContaining(schoolName.trim());
+        // 优先精确匹配
+        for (School s : schools) {
+            if (s.getName().equals(schoolName.trim())) {
+                return s.getId();
+            }
+        }
+        // 退而求其次：包含匹配（处理"东南大学四牌楼校区"这类）
+        for (School s : schools) {
+            if (schoolName.trim().contains(s.getName()) || s.getName().contains(schoolName.trim())) {
+                log.info("模糊匹配: CSV \"{}\" → DB \"{}\"", schoolName, s.getName());
+                return s.getId();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 生成单个调查维度的摘要
+     * 输入: "回答1|回答2|回答3|回答1"
+     * 输出: "回答1(2人); 回答2(1人); 回答3(1人)"
+     */
+    private String generateSummary(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return null;
+        String[] parts = raw.split("\\|");
+        Map<String, Integer> counter = new LinkedHashMap<>();
+        for (String part : parts) {
+            String trimmed = part.trim();
+            if (trimmed.isEmpty()) continue;
+            counter.merge(trimmed, 1, Integer::sum);
+        }
+        if (counter.isEmpty()) return null;
+        return counter.entrySet().stream()
+                .limit(10)
+                .map(e -> e.getKey() + (counter.size() > 1 || e.getValue() > 1 ? "(" + e.getValue() + "人)" : ""))
+                .collect(Collectors.joining("; "));
+    }
+
+    /**
+     * 合并晨跑和跑步打卡两个维度
+     */
+    private String mergeRunningSummary(String morningRun, String runCheckin) {
+        StringBuilder sb = new StringBuilder();
+        if (morningRun != null && !morningRun.trim().isEmpty()) {
+            sb.append("【晨跑】").append(generateSummary(morningRun));
+        }
+        if (runCheckin != null && !runCheckin.trim().isEmpty()) {
+            if (sb.length() > 0) sb.append(" | ");
+            sb.append("【跑步打卡】").append(generateSummary(runCheckin));
+        }
+        return sb.length() > 0 ? sb.toString() : null;
+    }
+
+    /**
+     * 将整行 CSV 数据构建为 JSON 字符串
+     */
+    private String buildRawPayload(String[] row) {
+        Map<String, String> map = new LinkedHashMap<>();
+        String[] keys = {
+            "name", "url", "答卷数", "上床下桌", "空调", "独立卫浴",
+            "早晚自习", "晨跑", "跑步打卡", "寒暑假", "外卖",
+            "交通", "洗衣机", "校园网", "断电断网", "食堂",
+            "热水", "电瓶车", "限电", "通宵自习", "电脑",
+            "卡消费", "银行卡", "超市", "快递", "共享单车", "门禁"
+        };
+        for (int i = 0; i < keys.length && i < row.length; i++) {
+            map.put(keys[i], row[i] != null ? row[i].trim() : "");
+        }
+        try {
+            return objectMapper.writeValueAsString(map);
+        } catch (Exception e) {
+            log.warn("JSON 序列化失败", e);
+            return "{}";
+        }
+    }
+
+    // ================================================================
     // 辅助方法
     // ================================================================
 
@@ -248,5 +447,9 @@ public class CsvImportService {
 
     private Double parseDouble(String s) {
         return (s == null || s.isEmpty()) ? null : Double.parseDouble(s.trim());
+    }
+
+    private String nvl(String s) {
+        return (s == null || s.isEmpty()) ? null : s.trim();
     }
 }
