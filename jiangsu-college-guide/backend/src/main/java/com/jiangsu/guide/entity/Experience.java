@@ -56,6 +56,17 @@ public class Experience {
     @Column(length = 500)
     private String tags;
 
+    @Column(name = "source_type", length = 20)
+    @Builder.Default
+    private String sourceType = "OFFICIAL";
+
+    @Column(name = "submission_id")
+    private Long submissionId;
+
+    @Column(length = 20)
+    @Builder.Default
+    private String status = "APPROVED";
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

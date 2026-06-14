@@ -65,6 +65,9 @@ public class SchoolLifeInfo {
     @Builder.Default
     private String sourceType = "OFFICIAL";
 
+    @Column(name = "submission_id")
+    private Long submissionId;
+
     @Column(name = "audit_status", length = 20)
     @Builder.Default
     private String auditStatus = "APPROVED";

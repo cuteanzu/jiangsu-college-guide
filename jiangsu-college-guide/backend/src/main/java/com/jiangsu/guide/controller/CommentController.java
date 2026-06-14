@@ -38,7 +38,15 @@ public class CommentController {
 
     @PostMapping("/comments/{id}/like")
     public Result<Void> likeComment(@PathVariable Long id) {
-        commentService.likeComment(id);
+        Long userId = SecurityUtils.getCurrentUserId();
+        commentService.likeComment(userId, id);
+        return Result.ok(null);
+    }
+
+    @DeleteMapping("/comments/{id}/like")
+    public Result<Void> unlikeComment(@PathVariable Long id) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        commentService.unlikeComment(userId, id);
         return Result.ok(null);
     }
 }

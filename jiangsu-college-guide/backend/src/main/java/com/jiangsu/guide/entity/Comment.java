@@ -50,6 +50,13 @@ public class Comment {
     @Builder.Default
     private Integer likeCount = 0;
 
+    @Column(name = "source_type", length = 20)
+    @Builder.Default
+    private String sourceType = "DIRECT";
+
+    @Column(name = "submission_id")
+    private Long submissionId;
+
     @Column(length = 20)
     @Builder.Default
     private String status = "PENDING";

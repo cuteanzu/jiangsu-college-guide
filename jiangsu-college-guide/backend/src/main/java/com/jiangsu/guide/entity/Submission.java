@@ -63,6 +63,12 @@ public class Submission {
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
 
+    @Column(name = "converted_type", length = 20)
+    private String convertedType;
+
+    @Column(name = "converted_id")
+    private Long convertedId;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

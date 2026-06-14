@@ -4,11 +4,14 @@ import com.jiangsu.guide.common.Result;
 import com.jiangsu.guide.common.SecurityUtils;
 import com.jiangsu.guide.entity.*;
 import com.jiangsu.guide.repository.*;
+import com.jiangsu.guide.service.CsvImportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.*;
 
 @RestController
@@ -25,6 +28,7 @@ public class AdminController {
     private final QaEntryRepository qaEntryRepository;
     private final SchoolLifeInfoRepository schoolLifeInfoRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CsvImportService csvImportService;
 
     // ========== Dashboard ==========
     @GetMapping("/dashboard")
@@ -210,5 +214,25 @@ public class AdminController {
     public Result<Void> deleteLifeInfo(@PathVariable Long id) {
         schoolLifeInfoRepository.deleteById(id);
         return Result.ok(null);
+    }
+
+    // ========== CSV 导入 ==========
+
+    @PostMapping("/import/cities")
+    public Result<Map<String, Object>> importCities(@RequestParam("file") MultipartFile file) throws IOException {
+        int count = csvImportService.importCities(file.getInputStream());
+        return Result.ok(Map.of("imported", count, "type", "city"));
+    }
+
+    @PostMapping("/import/schools")
+    public Result<Map<String, Object>> importSchools(@RequestParam("file") MultipartFile file) throws IOException {
+        int count = csvImportService.importSchools(file.getInputStream());
+        return Result.ok(Map.of("imported", count, "type", "school"));
+    }
+
+    @PostMapping("/import/life-info")
+    public Result<Map<String, Object>> importLifeInfo(@RequestParam("file") MultipartFile file) throws IOException {
+        int count = csvImportService.importSchoolLifeInfo(file.getInputStream());
+        return Result.ok(Map.of("imported", count, "type", "school_life_info"));
     }
 }

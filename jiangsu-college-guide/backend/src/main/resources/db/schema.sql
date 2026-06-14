@@ -1,21 +1,26 @@
 -- ============================================================
--- 江苏高校生活指北可视化平台 - 数据库初始化脚本
+-- 江苏高校生活指北可视化平台 - 数据库初始化脚本 V2
+-- 目标: MySQL 8.0+ / H2 (MODE=MySQL)
+-- 字符集: utf8mb4_unicode_ci
 -- ============================================================
 
 -- ============================================================
 -- 1. 用户表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `app_user` (
-    `id`            BIGINT          AUTO_INCREMENT PRIMARY KEY,
-    `username`      VARCHAR(50)     NOT NULL UNIQUE        COMMENT '用户名',
-    `password`      VARCHAR(255)    NOT NULL               COMMENT '密码(BCrypt)',
-    `nickname`      VARCHAR(50)     DEFAULT NULL           COMMENT '昵称',
-    `avatar`        VARCHAR(500)    DEFAULT NULL           COMMENT '头像URL',
-    `email`         VARCHAR(100)    DEFAULT NULL           COMMENT '邮箱',
-    `role`          VARCHAR(20)     NOT NULL DEFAULT 'USER' COMMENT '角色: USER / ADMIN',
-    `status`        TINYINT         NOT NULL DEFAULT 1     COMMENT '状态: 1=正常, 0=禁用',
-    `created_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `id`                BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    `username`          VARCHAR(50)  NOT NULL UNIQUE        COMMENT '用户名',
+    `password`          VARCHAR(255) NOT NULL               COMMENT '密码(BCrypt)',
+    `nickname`          VARCHAR(50)  DEFAULT NULL           COMMENT '昵称',
+    `avatar`            VARCHAR(500) DEFAULT NULL           COMMENT '头像URL',
+    `email`             VARCHAR(100) DEFAULT NULL           COMMENT '邮箱',
+    `email_verified`    TINYINT      NOT NULL DEFAULT 0     COMMENT '邮箱是否验证: 0=否, 1=是',
+    `email_verified_at` DATETIME     DEFAULT NULL           COMMENT '邮箱验证时间',
+    `role`              VARCHAR(20)  NOT NULL DEFAULT 'USER' COMMENT '角色: USER / ADMIN',
+    `status`            TINYINT      NOT NULL DEFAULT 1     COMMENT '状态: 1=正常, 0=禁用',
+    `created_at`        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_email (`email`),
     INDEX idx_user_role (`role`),
     INDEX idx_user_status (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
@@ -24,23 +29,23 @@ CREATE TABLE IF NOT EXISTS `app_user` (
 -- 2. 城市表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `city` (
-    `id`            BIGINT          AUTO_INCREMENT PRIMARY KEY,
-    `name`          VARCHAR(50)     NOT NULL UNIQUE        COMMENT '城市名',
-    `short_name`    VARCHAR(50)     DEFAULT NULL           COMMENT '简称',
-    `pinyin`        VARCHAR(100)    DEFAULT NULL           COMMENT '拼音',
-    `province`      VARCHAR(50)     NOT NULL DEFAULT '江苏省' COMMENT '省份',
-    `description`   TEXT            DEFAULT NULL           COMMENT '城市简介',
-    `tags`          VARCHAR(300)    DEFAULT NULL           COMMENT '标签(逗号分隔)',
-    `cost_guide`    VARCHAR(50)     DEFAULT NULL           COMMENT '生活成本',
-    `transit_guide` VARCHAR(50)     DEFAULT NULL           COMMENT '交通便利度',
-    `jobs_guide`    VARCHAR(50)     DEFAULT NULL           COMMENT '就业机会',
-    `audience`      TEXT            DEFAULT NULL           COMMENT '适合人群',
-    `school_count`  INT             NOT NULL DEFAULT 0     COMMENT '高校数量',
-    `sort_order`    INT             NOT NULL DEFAULT 0     COMMENT '排序',
-    `map_x`         DOUBLE          DEFAULT NULL           COMMENT '地图坐标X(%)',
-    `map_y`         DOUBLE          DEFAULT NULL           COMMENT '地图坐标Y(%)',
-    `created_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `id`            BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    `name`          VARCHAR(50)  NOT NULL UNIQUE        COMMENT '城市名',
+    `short_name`    VARCHAR(50)  DEFAULT NULL           COMMENT '简称',
+    `pinyin`        VARCHAR(100) DEFAULT NULL           COMMENT '拼音',
+    `province`      VARCHAR(50)  NOT NULL DEFAULT '江苏省' COMMENT '省份',
+    `description`   TEXT         DEFAULT NULL           COMMENT '城市简介',
+    `tags`          VARCHAR(300) DEFAULT NULL           COMMENT '标签(逗号分隔)',
+    `cost_guide`    VARCHAR(50)  DEFAULT NULL           COMMENT '生活成本: 低/友好/中等/中高/较高',
+    `transit_guide` VARCHAR(50)  DEFAULT NULL           COMMENT '交通便利度',
+    `jobs_guide`    VARCHAR(50)  DEFAULT NULL           COMMENT '就业机会',
+    `audience`      TEXT         DEFAULT NULL           COMMENT '适合人群',
+    `school_count`  INT          NOT NULL DEFAULT 0     COMMENT '高校数量',
+    `sort_order`    INT          NOT NULL DEFAULT 0     COMMENT '排序',
+    `map_x`         DOUBLE       DEFAULT NULL           COMMENT '地图坐标X(%)',
+    `map_y`         DOUBLE       DEFAULT NULL           COMMENT '地图坐标Y(%)',
+    `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_city_sort (`sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='城市表';
 
@@ -48,31 +53,31 @@ CREATE TABLE IF NOT EXISTS `city` (
 -- 3. 学校表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `school` (
-    `id`            BIGINT          AUTO_INCREMENT PRIMARY KEY,
-    `code`          VARCHAR(30)     NOT NULL UNIQUE        COMMENT '英文标识码(nju/seu等)',
-    `name`          VARCHAR(100)    NOT NULL               COMMENT '学校名称',
-    `city_id`       BIGINT          NOT NULL               COMMENT '所属城市ID',
-    `type`          VARCHAR(20)     DEFAULT NULL           COMMENT '类型: 综合/理工/师范/医药/农林/艺术/体育',
-    `level`         VARCHAR(20)     DEFAULT NULL           COMMENT '层次: 985/211/dual/provincial',
-    `lat`           DOUBLE          DEFAULT NULL           COMMENT '纬度',
-    `lng`           DOUBLE          DEFAULT NULL           COMMENT '经度',
-    `founded`       INT             DEFAULT NULL           COMMENT '建校年份',
-    `logo_url`      VARCHAR(500)    DEFAULT NULL           COMMENT '校徽URL',
-    `cover_url`     VARCHAR(500)    DEFAULT NULL           COMMENT '封面图URL',
-    `website`       VARCHAR(200)    DEFAULT NULL           COMMENT '官网',
-    `address`       VARCHAR(300)    DEFAULT NULL           COMMENT '地址',
-    `brief`         TEXT            DEFAULT NULL           COMMENT '简介',
-    `hot_score`     INT             NOT NULL DEFAULT 0     COMMENT '热度分数',
-    `favorite_count` INT            NOT NULL DEFAULT 0     COMMENT '收藏数',
-    `map_x`         DOUBLE          DEFAULT NULL           COMMENT '地图坐标X(%)',
-    `map_y`         DOUBLE          DEFAULT NULL           COMMENT '地图坐标Y(%)',
-    `created_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `id`             BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    `code`           VARCHAR(30)  NOT NULL UNIQUE        COMMENT '英文标识码(nju/seu等)',
+    `name`           VARCHAR(100) NOT NULL               COMMENT '学校名称',
+    `city_id`        BIGINT       NOT NULL               COMMENT '所属城市ID',
+    `type`           VARCHAR(20)  DEFAULT NULL           COMMENT '类型: 综合/理工/师范/医药/农林/艺术/体育',
+    `level`          VARCHAR(20)  DEFAULT NULL           COMMENT '层次: 985/211/dual/provincial',
+    `lat`            DOUBLE       DEFAULT NULL           COMMENT '纬度',
+    `lng`            DOUBLE       DEFAULT NULL           COMMENT '经度',
+    `founded`        INT          DEFAULT NULL           COMMENT '建校年份',
+    `logo_url`       VARCHAR(500) DEFAULT NULL           COMMENT '校徽URL',
+    `cover_url`      VARCHAR(500) DEFAULT NULL           COMMENT '封面图URL',
+    `website`        VARCHAR(200) DEFAULT NULL           COMMENT '官网',
+    `address`        VARCHAR(300) DEFAULT NULL           COMMENT '地址',
+    `brief`          TEXT         DEFAULT NULL           COMMENT '简介',
+    `hot_score`      INT          NOT NULL DEFAULT 0     COMMENT '热度分数',
+    `favorite_count` INT          NOT NULL DEFAULT 0     COMMENT '收藏数(冗余字段,从favorite表实时计算)',
+    `map_x`          DOUBLE       DEFAULT NULL           COMMENT '地图坐标X(%)',
+    `map_y`          DOUBLE       DEFAULT NULL           COMMENT '地图坐标Y(%)',
+    `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_school_city (`city_id`),
     INDEX idx_school_level (`level`),
+    INDEX idx_school_type (`type`),
     INDEX idx_school_hot (`hot_score`),
     INDEX idx_school_name (`name`),
-    INDEX idx_school_code (`code`),
     CONSTRAINT fk_school_city FOREIGN KEY (`city_id`) REFERENCES `city`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='学校表';
 
@@ -80,23 +85,24 @@ CREATE TABLE IF NOT EXISTS `school` (
 -- 4. 学校生活信息表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `school_life_info` (
-    `id`                BIGINT      AUTO_INCREMENT PRIMARY KEY,
-    `school_id`         BIGINT      NOT NULL               COMMENT '学校ID',
-    `dorm_score`        DOUBLE      DEFAULT NULL           COMMENT '宿舍评分(1-10)',
-    `dorm_desc`         TEXT        DEFAULT NULL           COMMENT '宿舍描述',
-    `canteen_score`     DOUBLE      DEFAULT NULL           COMMENT '食堂评分(1-10)',
-    `canteen_desc`      TEXT        DEFAULT NULL           COMMENT '食堂描述',
-    `study_score`       DOUBLE      DEFAULT NULL           COMMENT '学习氛围评分(1-10)',
-    `study_desc`        TEXT        DEFAULT NULL           COMMENT '学习氛围描述',
-    `transport_score`   DOUBLE      DEFAULT NULL           COMMENT '交通评分(1-10)',
-    `transport_desc`    TEXT        DEFAULT NULL           COMMENT '交通描述',
-    `surrounding_score` DOUBLE      DEFAULT NULL           COMMENT '周边评分(1-10)',
-    `surrounding_desc`  TEXT        DEFAULT NULL           COMMENT '周边描述',
-    `tips`              TEXT        DEFAULT NULL           COMMENT '新生建议',
-    `source_type`       VARCHAR(20) DEFAULT 'OFFICIAL'     COMMENT '来源: OFFICIAL/USER_SUBMIT',
-    `audit_status`      VARCHAR(20) DEFAULT 'APPROVED'     COMMENT '审核状态: PENDING/APPROVED/REJECTED',
-    `created_at`        DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`        DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `id`                BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    `school_id`         BIGINT       NOT NULL               COMMENT '学校ID',
+    `dorm_score`        DOUBLE       DEFAULT NULL           COMMENT '宿舍评分(1-10)',
+    `dorm_desc`         TEXT         DEFAULT NULL           COMMENT '宿舍描述',
+    `canteen_score`     DOUBLE       DEFAULT NULL           COMMENT '食堂评分(1-10)',
+    `canteen_desc`      TEXT         DEFAULT NULL           COMMENT '食堂描述',
+    `study_score`       DOUBLE       DEFAULT NULL           COMMENT '学习氛围评分(1-10)',
+    `study_desc`        TEXT         DEFAULT NULL           COMMENT '学习氛围描述',
+    `transport_score`   DOUBLE       DEFAULT NULL           COMMENT '交通评分(1-10)',
+    `transport_desc`    TEXT         DEFAULT NULL           COMMENT '交通描述',
+    `surrounding_score` DOUBLE       DEFAULT NULL           COMMENT '周边评分(1-10)',
+    `surrounding_desc`  TEXT         DEFAULT NULL           COMMENT '周边描述',
+    `tips`              TEXT         DEFAULT NULL           COMMENT '新生建议',
+    `source_type`       VARCHAR(20)  DEFAULT 'OFFICIAL'     COMMENT '来源: OFFICIAL / USER_SUBMIT',
+    `submission_id`     BIGINT       DEFAULT NULL           COMMENT '来源投稿ID(USER_SUBMIT时)',
+    `audit_status`      VARCHAR(20)  DEFAULT 'APPROVED'     COMMENT '审核状态: PENDING / APPROVED / REJECTED',
+    `created_at`        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_school_life (`school_id`),
     CONSTRAINT fk_life_school FOREIGN KEY (`school_id`) REFERENCES `school`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='学校生活信息表';
@@ -105,20 +111,23 @@ CREATE TABLE IF NOT EXISTS `school_life_info` (
 -- 5. 评论留言表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `comment` (
-    `id`            BIGINT          AUTO_INCREMENT PRIMARY KEY,
-    `school_id`     BIGINT          NOT NULL               COMMENT '学校ID',
-    `user_id`       BIGINT          NOT NULL               COMMENT '用户ID',
-    `content`       TEXT            NOT NULL               COMMENT '内容',
-    `category`      VARCHAR(30)     DEFAULT 'GENERAL'      COMMENT '分类: GENERAL/DORM/CANTEEN/STUDY/TRANSPORT/SURROUNDING/CORRECTION',
-    `is_anonymous`  TINYINT         NOT NULL DEFAULT 0     COMMENT '是否匿名: 0=否, 1=是',
-    `like_count`    INT             NOT NULL DEFAULT 0     COMMENT '点赞数',
-    `status`        VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/APPROVED/REJECTED',
-    `reject_reason` VARCHAR(500)    DEFAULT NULL           COMMENT '驳回原因',
-    `created_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `id`            BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    `school_id`     BIGINT       NOT NULL               COMMENT '学校ID',
+    `user_id`       BIGINT       NOT NULL               COMMENT '用户ID',
+    `content`       TEXT         NOT NULL               COMMENT '内容',
+    `category`      VARCHAR(30)  DEFAULT 'GENERAL'      COMMENT '分类: GENERAL/DORM/CANTEEN/STUDY/TRANSPORT/SURROUNDING/CORRECTION',
+    `is_anonymous`  TINYINT      NOT NULL DEFAULT 0     COMMENT '是否匿名: 0=否, 1=是',
+    `like_count`    INT          NOT NULL DEFAULT 0     COMMENT '点赞数(冗余,从user_like实时计算)',
+    `source_type`   VARCHAR(20)  DEFAULT 'DIRECT'       COMMENT '来源: DIRECT / USER_SUBMIT',
+    `submission_id` BIGINT       DEFAULT NULL           COMMENT '来源投稿ID',
+    `status`        VARCHAR(20)  NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING / APPROVED / REJECTED',
+    `reject_reason` VARCHAR(500) DEFAULT NULL           COMMENT '驳回原因',
+    `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_comment_school (`school_id`),
     INDEX idx_comment_user (`user_id`),
     INDEX idx_comment_status (`status`),
+    INDEX idx_comment_school_status (`school_id`, `status`),
     CONSTRAINT fk_comment_school FOREIGN KEY (`school_id`) REFERENCES `school`(`id`),
     CONSTRAINT fk_comment_user FOREIGN KEY (`user_id`) REFERENCES `app_user`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='评论留言表';
@@ -127,24 +136,27 @@ CREATE TABLE IF NOT EXISTS `comment` (
 -- 6. 投稿表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `submission` (
-    `id`            BIGINT          AUTO_INCREMENT PRIMARY KEY,
-    `user_id`       BIGINT          NOT NULL               COMMENT '投稿用户ID',
-    `school_id`     BIGINT          DEFAULT NULL           COMMENT '关联学校ID(可为空)',
-    `school_name`   VARCHAR(100)    DEFAULT NULL           COMMENT '学校名(未关联时)',
-    `type`          VARCHAR(30)     NOT NULL               COMMENT '类型: NEW_INFO/CORRECTION/EXPERIENCE/DORM/CANTEEN/TRANSPORT/STUDY/SURROUNDING',
-    `title`         VARCHAR(200)    DEFAULT NULL           COMMENT '标题',
-    `content`       TEXT            NOT NULL               COMMENT '内容',
-    `is_anonymous`  TINYINT         NOT NULL DEFAULT 0     COMMENT '是否匿名',
-    `contact`       VARCHAR(100)    DEFAULT NULL           COMMENT '联系方式',
-    `status`        VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/APPROVED/REJECTED',
-    `reviewer_id`   BIGINT          DEFAULT NULL           COMMENT '审核人ID',
-    `reject_reason` VARCHAR(500)    DEFAULT NULL           COMMENT '驳回原因',
-    `reviewed_at`   DATETIME        DEFAULT NULL           COMMENT '审核时间',
-    `created_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `id`             BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    `user_id`        BIGINT       NOT NULL               COMMENT '投稿用户ID',
+    `school_id`      BIGINT       DEFAULT NULL           COMMENT '关联学校ID(可为空)',
+    `school_name`    VARCHAR(100) DEFAULT NULL           COMMENT '学校名(未关联时)',
+    `type`           VARCHAR(30)  NOT NULL               COMMENT '投稿类型: NEW_INFO/CORRECTION/EXPERIENCE/DORM/CANTEEN/TRANSPORT/STUDY/SURROUNDING',
+    `title`          VARCHAR(200) DEFAULT NULL           COMMENT '标题',
+    `content`        TEXT         NOT NULL               COMMENT '内容',
+    `is_anonymous`   TINYINT      NOT NULL DEFAULT 0     COMMENT '是否匿名',
+    `contact`        VARCHAR(100) DEFAULT NULL           COMMENT '联系方式',
+    `status`         VARCHAR(20)  NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/APPROVED/REJECTED',
+    `reviewer_id`    BIGINT       DEFAULT NULL           COMMENT '审核人ID',
+    `reject_reason`  VARCHAR(500) DEFAULT NULL           COMMENT '驳回原因',
+    `reviewed_at`    DATETIME     DEFAULT NULL           COMMENT '审核时间',
+    `converted_type` VARCHAR(20)  DEFAULT NULL           COMMENT '转化目标类型: EXPERIENCE/QA/LIFE_INFO/COMMENT',
+    `converted_id`   BIGINT       DEFAULT NULL           COMMENT '转化目标ID',
+    `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_sub_user (`user_id`),
     INDEX idx_sub_school (`school_id`),
     INDEX idx_sub_status (`status`),
+    INDEX idx_sub_type (`type`),
     CONSTRAINT fk_sub_user FOREIGN KEY (`user_id`) REFERENCES `app_user`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='投稿表';
 
@@ -152,10 +164,10 @@ CREATE TABLE IF NOT EXISTS `submission` (
 -- 7. 收藏表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `favorite` (
-    `id`            BIGINT          AUTO_INCREMENT PRIMARY KEY,
-    `user_id`       BIGINT          NOT NULL               COMMENT '用户ID',
-    `school_id`     BIGINT          NOT NULL               COMMENT '学校ID',
-    `created_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `id`         BIGINT   AUTO_INCREMENT PRIMARY KEY,
+    `user_id`    BIGINT   NOT NULL               COMMENT '用户ID',
+    `school_id`  BIGINT   NOT NULL               COMMENT '学校ID',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_user_school (`user_id`, `school_id`),
     INDEX idx_fav_user (`user_id`),
     INDEX idx_fav_school (`school_id`),
@@ -164,47 +176,69 @@ CREATE TABLE IF NOT EXISTS `favorite` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='收藏表';
 
 -- ============================================================
--- 8. 校园经验文章表 (新增)
+-- 8. 校园经验文章表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `experience` (
-    `id`              BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    `code`            VARCHAR(50)  NOT NULL UNIQUE        COMMENT '标识码(exp-1等)',
-    `category`        VARCHAR(30)  NOT NULL               COMMENT '分类: dorm/cafeteria/study/freshman/city-life/exam/career',
-    `school_id`       BIGINT       DEFAULT NULL           COMMENT '关联学校ID',
-    `school_name`     VARCHAR(100) DEFAULT NULL           COMMENT '学校名称',
-    `city`            VARCHAR(50)  DEFAULT NULL           COMMENT '城市名',
-    `title`           VARCHAR(200) NOT NULL               COMMENT '标题',
-    `excerpt`         VARCHAR(500) DEFAULT NULL           COMMENT '摘要',
-    `body`            TEXT         NOT NULL               COMMENT '正文',
-    `like_count`      INT          NOT NULL DEFAULT 0     COMMENT '点赞数',
-    `comment_count`   INT          NOT NULL DEFAULT 0     COMMENT '评论数',
-    `tags`            VARCHAR(500) DEFAULT NULL           COMMENT '标签(逗号分隔)',
-    `created_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `id`            BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    `code`          VARCHAR(50)  NOT NULL UNIQUE        COMMENT '标识码(exp-1等,用户投稿自动生成exp-{uuid})',
+    `category`      VARCHAR(30)  NOT NULL               COMMENT '分类: dorm/cafeteria/study/freshman/city-life/exam/career',
+    `school_id`     BIGINT       DEFAULT NULL           COMMENT '关联学校ID',
+    `school_name`   VARCHAR(100) DEFAULT NULL           COMMENT '学校名称(冗余)',
+    `city`          VARCHAR(50)  DEFAULT NULL           COMMENT '城市名',
+    `title`         VARCHAR(200) NOT NULL               COMMENT '标题',
+    `excerpt`       VARCHAR(500) DEFAULT NULL           COMMENT '摘要',
+    `body`          TEXT         NOT NULL               COMMENT '正文',
+    `like_count`    INT          NOT NULL DEFAULT 0     COMMENT '点赞数(冗余,从user_like实时计算)',
+    `comment_count` INT          NOT NULL DEFAULT 0     COMMENT '评论数',
+    `tags`          VARCHAR(500) DEFAULT NULL           COMMENT '标签(逗号分隔)',
+    `source_type`   VARCHAR(20)  DEFAULT 'OFFICIAL'     COMMENT '来源: OFFICIAL / USER_SUBMIT',
+    `submission_id` BIGINT       DEFAULT NULL           COMMENT '来源投稿ID',
+    `status`        VARCHAR(20)  NOT NULL DEFAULT 'APPROVED' COMMENT '状态: PENDING / APPROVED / REJECTED',
+    `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_exp_category (`category`),
     INDEX idx_exp_school (`school_id`),
     INDEX idx_exp_city (`city`),
+    INDEX idx_exp_status (`status`),
     CONSTRAINT fk_exp_school FOREIGN KEY (`school_id`) REFERENCES `school`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='校园经验文章表';
 
 -- ============================================================
--- 9. 问答表 (新增)
+-- 9. 问答表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `qa_entry` (
-    `id`              BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    `code`            VARCHAR(50)  NOT NULL UNIQUE        COMMENT '标识码(qa-1等)',
-    `question`        TEXT         NOT NULL               COMMENT '问题',
-    `answer`          TEXT         NOT NULL               COMMENT '回答',
-    `school_id`       BIGINT       DEFAULT NULL           COMMENT '关联学校ID',
-    `school_name`     VARCHAR(100) DEFAULT NULL           COMMENT '学校名称',
-    `category`        VARCHAR(30)  NOT NULL               COMMENT '分类',
-    `like_count`      INT          NOT NULL DEFAULT 0     COMMENT '点赞数',
-    `created_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `id`            BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    `code`          VARCHAR(50)  NOT NULL UNIQUE        COMMENT '标识码(qa-1等)',
+    `question`      TEXT         NOT NULL               COMMENT '问题',
+    `answer`        TEXT         NOT NULL               COMMENT '回答',
+    `school_id`     BIGINT       DEFAULT NULL           COMMENT '关联学校ID',
+    `school_name`   VARCHAR(100) DEFAULT NULL           COMMENT '学校名称(冗余)',
+    `category`      VARCHAR(30)  NOT NULL               COMMENT '分类: dorm/study/city-life/freshman/exam/career',
+    `like_count`    INT          NOT NULL DEFAULT 0     COMMENT '点赞数(冗余,从user_like实时计算)',
+    `source_type`   VARCHAR(20)  DEFAULT 'OFFICIAL'     COMMENT '来源: OFFICIAL / USER_SUBMIT',
+    `submission_id` BIGINT       DEFAULT NULL           COMMENT '来源投稿ID',
+    `status`        VARCHAR(20)  NOT NULL DEFAULT 'APPROVED' COMMENT '状态: PENDING / APPROVED / REJECTED',
+    `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_qa_category (`category`),
     INDEX idx_qa_school (`school_id`),
+    INDEX idx_qa_status (`status`),
     CONSTRAINT fk_qa_school FOREIGN KEY (`school_id`) REFERENCES `school`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='问答表';
+
+-- ============================================================
+-- 10. 用户点赞表 (V2 新增 - 防重点赞)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `user_like` (
+    `id`          BIGINT      AUTO_INCREMENT PRIMARY KEY,
+    `user_id`     BIGINT      NOT NULL               COMMENT '用户ID',
+    `target_type` VARCHAR(20) NOT NULL               COMMENT '点赞目标类型: COMMENT/EXPERIENCE/QA',
+    `target_id`   BIGINT      NOT NULL               COMMENT '点赞目标ID',
+    `created_at`  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_like (`user_id`, `target_type`, `target_id`),
+    INDEX idx_like_target (`target_type`, `target_id`),
+    CONSTRAINT fk_like_user FOREIGN KEY (`user_id`) REFERENCES `app_user`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户点赞表';
 
 -- ============================================================
 -- 初始数据

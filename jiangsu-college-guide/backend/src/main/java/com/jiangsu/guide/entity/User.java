@@ -38,6 +38,13 @@ public class User {
     @Column(length = 100)
     private String email;
 
+    @Column(name = "email_verified")
+    @Builder.Default
+    private Integer emailVerified = 0;
+
+    @Column(name = "email_verified_at")
+    private LocalDateTime emailVerifiedAt;
+
     @Column(nullable = false, length = 20)
     @Builder.Default
     private String role = "USER";

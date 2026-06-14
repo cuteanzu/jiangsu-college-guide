@@ -3,8 +3,10 @@ package com.jiangsu.guide.service.impl;
 import com.jiangsu.guide.dto.CommentDTO;
 import com.jiangsu.guide.entity.Comment;
 import com.jiangsu.guide.entity.User;
+import com.jiangsu.guide.entity.UserLike;
 import com.jiangsu.guide.exception.BusinessException;
 import com.jiangsu.guide.repository.CommentRepository;
+import com.jiangsu.guide.repository.UserLikeRepository;
 import com.jiangsu.guide.repository.UserRepository;
 import com.jiangsu.guide.service.CommentService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
+    private final UserLikeRepository userLikeRepository;
 
     @Override
     @Transactional
@@ -55,11 +58,43 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public void likeComment(Long commentId) {
+    public void likeComment(Long userId, Long commentId) {
+        if (userLikeRepository.existsByUserIdAndTargetTypeAndTargetId(userId, "COMMENT", commentId)) {
+            throw new BusinessException("已点赞过该评论");
+        }
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new BusinessException(404, "评论不存在"));
+
+        userLikeRepository.save(UserLike.builder()
+                .userId(userId)
+                .targetType("COMMENT")
+                .targetId(commentId)
+                .build());
+
         comment.setLikeCount(comment.getLikeCount() + 1);
         commentRepository.save(comment);
+        log.info("✔ 点赞成功: userId={}, commentId={}", userId, commentId);
+    }
+
+    @Override
+    @Transactional
+    public void unlikeComment(Long userId, Long commentId) {
+        if (!userLikeRepository.existsByUserIdAndTargetTypeAndTargetId(userId, "COMMENT", commentId)) {
+            throw new BusinessException("尚未点赞该评论");
+        }
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new BusinessException(404, "评论不存在"));
+
+        userLikeRepository.deleteByUserIdAndTargetTypeAndTargetId(userId, "COMMENT", commentId);
+
+        comment.setLikeCount(Math.max(0, comment.getLikeCount() - 1));
+        commentRepository.save(comment);
+        log.info("✔ 取消点赞: userId={}, commentId={}", userId, commentId);
+    }
+
+    @Override
+    public boolean isLiked(Long userId, Long commentId) {
+        return userLikeRepository.existsByUserIdAndTargetTypeAndTargetId(userId, "COMMENT", commentId);
     }
 
     @Override
