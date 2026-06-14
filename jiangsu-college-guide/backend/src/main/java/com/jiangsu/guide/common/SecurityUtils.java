@@ -11,8 +11,12 @@ public class SecurityUtils {
         if (auth == null || !auth.isAuthenticated()) {
             return null;
         }
-        Long userId = (Long) auth.getPrincipal();
-        String username = (String) auth.getDetails();
+        Object principal = auth.getPrincipal();
+        if (!(principal instanceof Long userId)) {
+            return null;
+        }
+        Object details = auth.getDetails();
+        String username = details instanceof String ? (String) details : "";
         String role = auth.getAuthorities().stream()
                 .findFirst()
                 .map(GrantedAuthority::getAuthority)
