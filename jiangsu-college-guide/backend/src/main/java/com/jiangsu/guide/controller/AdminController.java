@@ -1,13 +1,13 @@
 package com.jiangsu.guide.controller;
 
-import com.jiangsu.guide.common.Result;
 import com.jiangsu.guide.common.SecurityUtils;
+import com.jiangsu.guide.common.Result;
 import com.jiangsu.guide.entity.*;
 import com.jiangsu.guide.repository.*;
 import com.jiangsu.guide.service.CsvImportService;
+import com.jiangsu.guide.service.SubmissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,8 +27,8 @@ public class AdminController {
     private final ExperienceRepository experienceRepository;
     private final QaEntryRepository qaEntryRepository;
     private final SchoolLifeInfoRepository schoolLifeInfoRepository;
-    private final PasswordEncoder passwordEncoder;
     private final CsvImportService csvImportService;
+    private final SubmissionService submissionService;
 
     // ========== Dashboard ==========
     @GetMapping("/dashboard")
@@ -106,20 +106,13 @@ public class AdminController {
 
     @PostMapping("/submissions/{id}/approve")
     public Result<Void> approveSubmission(@PathVariable Long id) {
-        Submission submission = submissionRepository.findById(id).orElseThrow();
-        submission.setStatus("APPROVED");
-        submission.setReviewerId(SecurityUtils.getCurrentUserId());
-        submissionRepository.save(submission);
+        submissionService.approveSubmission(id, SecurityUtils.getCurrentUserId());
         return Result.ok(null);
     }
 
     @PostMapping("/submissions/{id}/reject")
     public Result<Void> rejectSubmission(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        Submission submission = submissionRepository.findById(id).orElseThrow();
-        submission.setStatus("REJECTED");
-        submission.setRejectReason(body.get("reason"));
-        submission.setReviewerId(SecurityUtils.getCurrentUserId());
-        submissionRepository.save(submission);
+        submissionService.rejectSubmission(id, SecurityUtils.getCurrentUserId(), body.get("reason"));
         return Result.ok(null);
     }
 

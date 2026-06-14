@@ -13,10 +13,15 @@ import java.util.Optional;
 public interface QaEntryRepository extends JpaRepository<QaEntry, Long> {
     List<QaEntry> findByCategory(String category);
     List<QaEntry> findBySchoolId(Long schoolId);
+    List<QaEntry> findBySchoolIdAndStatus(Long schoolId, String status);
     Optional<QaEntry> findByCode(String code);
+    Optional<QaEntry> findByCodeAndStatus(String code, String status);
+    Optional<QaEntry> findBySubmissionId(Long submissionId);
 
     @Query("SELECT q FROM QaEntry q WHERE " +
+           "q.status = :status AND " +
            "(:category IS NULL OR q.category = :category) " +
            "ORDER BY q.likeCount DESC")
-    List<QaEntry> findByFilters(@Param("category") String category);
+    List<QaEntry> findByFilters(@Param("category") String category,
+                                @Param("status") String status);
 }

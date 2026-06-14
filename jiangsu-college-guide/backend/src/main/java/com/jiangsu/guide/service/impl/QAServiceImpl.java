@@ -22,7 +22,7 @@ public class QAServiceImpl implements QAService {
 
     @Override
     public List<QADTO> getAllQA(String category) {
-        return qaEntryRepository.findByFilters(category)
+        return qaEntryRepository.findByFilters(category, "APPROVED")
                 .stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
@@ -30,7 +30,7 @@ public class QAServiceImpl implements QAService {
 
     @Override
     public QADTO getByCode(String code) {
-        QaEntry qa = qaEntryRepository.findByCode(code)
+        QaEntry qa = qaEntryRepository.findByCodeAndStatus(code, "APPROVED")
                 .orElseThrow(() -> new BusinessException(404, "问答不存在"));
         return toDTO(qa);
     }

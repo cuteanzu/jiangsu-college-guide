@@ -24,7 +24,7 @@ public class ExperienceServiceImpl implements ExperienceService {
 
     @Override
     public List<ExperienceDTO> getAllExperiences(String category, String city, Long schoolId) {
-        return experienceRepository.findByFilters(category, city, schoolId)
+        return experienceRepository.findByFilters(category, city, schoolId, "APPROVED")
                 .stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
@@ -32,14 +32,14 @@ public class ExperienceServiceImpl implements ExperienceService {
 
     @Override
     public ExperienceDTO getByCode(String code) {
-        Experience exp = experienceRepository.findByCode(code)
+        Experience exp = experienceRepository.findByCodeAndStatus(code, "APPROVED")
                 .orElseThrow(() -> new BusinessException(404, "经验文章不存在"));
         return toDTO(exp);
     }
 
     @Override
     public List<ExperienceDTO> getBySchoolId(Long schoolId) {
-        return experienceRepository.findBySchoolId(schoolId)
+        return experienceRepository.findBySchoolIdAndStatus(schoolId, "APPROVED")
                 .stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
