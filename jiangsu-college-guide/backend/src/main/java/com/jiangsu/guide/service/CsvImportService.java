@@ -183,6 +183,7 @@ public class CsvImportService {
         if (rows.isEmpty()) return 0;
 
         int skipped = 0;
+        int skippedEmpty = 0;
         List<String[]> validRows = new ArrayList<>();
 
         for (String[] row : rows) {
@@ -190,6 +191,11 @@ public class CsvImportService {
             if (schoolName.isEmpty()) {
                 log.warn("学校名为空，跳过该行");
                 skipped++;
+                continue;
+            }
+            // 跳过响应数为 0 的空条目（避免覆盖有效数据）
+            if (parseInt(row[2]) == 0) {
+                skippedEmpty++;
                 continue;
             }
             Long schoolId = resolveSchoolIdByName(schoolName);
@@ -208,6 +214,9 @@ public class CsvImportService {
             log.warn("没有可导入的行（全部跳过），共 {} 行", rows.size());
             return 0;
         }
+
+        // 按 response_count 升序排列，丰富数据最后写入（覆盖空数据）
+        validRows.sort((a, b) -> Integer.compare(parseInt(a[2]), parseInt(b[2])));
 
         String sql = "INSERT INTO school_life_survey_summary (school_id, school_name, source_url, response_count, " +
                 "dorm_summary, ac_summary, private_bath_summary, study_rule_summary, " +
@@ -275,29 +284,48 @@ public class CsvImportService {
             ps.setString(28, buildRawPayload(row));     // raw_payload (JSON)
         });
 
-        log.info("✔ 生活调查导入完成: 成功 {} 行, 跳过 {} 行 (学校未匹配或名为空)",
-                validRows.size(), skipped);
+        log.info("✔ 生活调查导入完成: 成功 {} 行, 跳过 {} 行 (未匹配: {}, 空数据: {})",
+                validRows.size(), skipped + skippedEmpty, skipped, skippedEmpty);
         return validRows.size();
     }
 
     /**
-     * 按学校名称精确匹配 school_id
+     * 按学校名称匹配 school_id（多级策略）
+     * 1. 精确匹配
+     * 2. 模糊匹配：CSV 名称包含 DB 名称，或 DB 名称包含 CSV 名称
+     * 3. 对分校区做前缀匹配（如 "南京大学仙林校区" → "南京大学"）
      */
     private Long resolveSchoolIdByName(String schoolName) {
-        List<School> schools = schoolRepository.findByNameContaining(schoolName.trim());
-        // 优先精确匹配
-        for (School s : schools) {
-            if (s.getName().equals(schoolName.trim())) {
+        String name = schoolName.trim();
+        if (name.isEmpty()) return null;
+
+        // 第 1 级：精确匹配
+        List<School> exact = schoolRepository.findByNameContaining(name);
+        for (School s : exact) {
+            if (s.getName().equals(name)) {
                 return s.getId();
             }
         }
-        // 退而求其次：包含匹配（处理"东南大学四牌楼校区"这类）
-        for (School s : schools) {
-            if (schoolName.trim().contains(s.getName()) || s.getName().contains(schoolName.trim())) {
-                log.info("模糊匹配: CSV \"{}\" → DB \"{}\"", schoolName, s.getName());
+
+        // 第 2 级：双向包含匹配
+        for (School s : exact) {
+            if (name.contains(s.getName()) || s.getName().contains(name)) {
+                log.info("模糊匹配: CSV \"{}\" → DB \"{}\"", name, s.getName());
                 return s.getId();
             }
         }
+
+        // 第 3 级：全表扫描 — 用 DB 名去匹配 CSV 名（处理分校区名称）
+        List<School> allSchools = schoolRepository.findAll();
+        // 按名称长度降序排列，优先匹配更具体的名称（如"南京理工大学泰州科技学院"优先于"南京理工大学"）
+        allSchools.sort((a, b) -> Integer.compare(b.getName().length(), a.getName().length()));
+        for (School s : allSchools) {
+            if (name.contains(s.getName())) {
+                log.info("子串匹配: CSV \"{}\" → DB \"{}\"", name, s.getName());
+                return s.getId();
+            }
+        }
+
         return null;
     }
 
